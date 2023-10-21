@@ -1,3 +1,5 @@
+import { Room } from './room';
 import './style.css';
 
-(document.getElementById('app') as HTMLDivElement).innerHTML= `<h1>Dungen</h1>`
+const app = (document.getElementById('app') as HTMLDivElement)
+app.innerHTML += `<h1>Dungen</h1>`
