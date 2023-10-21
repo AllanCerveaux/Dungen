@@ -121,9 +121,9 @@ export class Room {
 
 	doorCanBePlaced(position: Vector2): boolean {
 		return this.x + position.x >= 0 &&
-			this.x + position.x <= DUNGEON_MAX_SIZE.width &&
+			this.x + position.x < DUNGEON_MAX_SIZE.width &&
 			this.y + position.y >= 0 &&
-			this.y + position.y <= DUNGEON_MAX_SIZE.height;
+			this.y + position.y < DUNGEON_MAX_SIZE.height;
 	}
 
 	get type(): RoomType | null {
