@@ -1,6 +1,6 @@
 import { Dungeon } from './dungeon';
-import { Room } from './room';
 import './style.css';
+
 
 const dungeon = new Dungeon()
 dungeon.generate()

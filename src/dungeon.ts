@@ -1,16 +1,17 @@
 import { Room } from "./room";
 import { RoomType } from "./type";
-import { create2DArray } from "./utils";
+import { DUNGEON_MAX_SIZE, create2DArray, getRandomInt, hasChance } from "./utils";
 
 export class Dungeon {
 	private _size = {
-		width: 8,
-		height: 8,
+		width: DUNGEON_MAX_SIZE.width,
+		height: DUNGEON_MAX_SIZE.height,
 	};
 	private _preset_room: Record<"Start" | "End", Room | null> = {
 		Start: null,
 		End: null,
 	};
+	private roomCount: number = 0
 	grid: (Room | null)[][] = [];
 
 	generate() {
@@ -23,26 +24,33 @@ export class Dungeon {
 	}
 
 	generateRooms() {
-		this.addRoom(Math.floor(this._size.width / 2), Math.floor(this._size.height / 2), 'Depart');
-		this._preset_room.Start = this.getRoomByPosition(Math.floor(this._size.width / 2), Math.floor(this._size.height / 2));
+		const startRoom = this.addRoom(getRandomInt(0, this._size.width), getRandomInt(0, this._size.height), 'Depart');
+		this._preset_room.Start = this.getRoomByPosition(startRoom.x, startRoom.y);
 
 		let current_room: Room | null | undefined = this._preset_room.Start;
 		let stack = [current_room];
+
+		let generationChance = 100;
 
 		while (stack.length) {
 			current_room = stack.pop();
 			if (!current_room) return
 			const neighbors = current_room.getNeighborPos();
-
 			for (const neighbor of neighbors) {
 				if (!this.isValidPosition(neighbor.x, neighbor.y) || this.getRoomByPosition(neighbor.x, neighbor.y)) {
-					continue; // Skip if position is invalid or room already exists
+					continue;
 				}
 
-				const newRoom = this.addRoom(neighbor.x, neighbor.y);
-				newRoom.link(neighbor.direction);
-				current_room.link(current_room.getReverseDirection(neighbor.direction)); // Link the current room in the opposite direction
-				stack.push(newRoom);
+				if (hasChance(generationChance)) {
+					const newRoom = this.addRoom(neighbor.x, neighbor.y);
+					newRoom.link(neighbor.direction);
+
+					if (this.roomCount % 3 == 0 && generationChance > 10) {
+						generationChance -= 10;
+					}
+					current_room.link(current_room.getReverseDirection(neighbor.direction));
+					stack.push(newRoom);
+				}
 			}
 		}
 	}
@@ -51,7 +59,8 @@ export class Dungeon {
 		return x >= 0 && y >= 0 && x < this._size.width && y < this._size.height;
 	}
 
-	getRoomByPosition(x: number, y: number): Room | null {
+	getRoomByPosition(x?: number, y?: number): Room | null {
+		if (!x || !y) return null
 		return this.grid[y][x]
 	}
 
@@ -59,6 +68,7 @@ export class Dungeon {
 		const newRoom = new Room({ x, y }, type);
 		this.grid[y][x] = newRoom;
 		newRoom.generateDoor()
+		this.roomCount++;
 
 		return newRoom;
 	}

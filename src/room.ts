@@ -98,6 +98,19 @@ export class Room {
 		else return direction
 	}
 
+	getNeighborAtDirection(direction: DoorDirectionName): Vector2 | null {
+		const doorData = this._doors[direction];
+		if (!doorData) return null;
+
+		const x = this.x + doorData.position.x;
+		const y = this.y + doorData.position.y;
+
+		return {
+			x,
+			y
+		};
+	}
+
 	disableDoor(): void {
 		this.doors_entries.forEach(([direction, { position }]) => {
 			if (!this.doorCanBePlaced(position)) {
@@ -164,6 +177,11 @@ export class Room {
 			EAST: { active: E },
 			WEST: { active: W }
 		} = this.doors
+		const roomType = () => {
+			if (this.type === 'Depart') return '🟩'
+			else if (this.type === 'End') return '🟥'
+			else return '⬜️'
+		}
 		const room = document.createElement('div')
 		const classes = [
 			'room'
@@ -172,13 +190,16 @@ export class Room {
 		room.classList.add(...classes)
 		room.innerHTML = `
 <div>
+	<span>[${this.y}-${this.x}]<span>
+</div>
+<div>
 	<span>◤</span>
 	<span>${N ? "🚪" : "⬛️"}</span>
 	<span>◥</span>
 </div>
 <div>
 	<span>${W ? "🚪" : "⬛️"}</span>
-	<span>[${this.y}-${this.x}]<span>
+	<span>${roomType()}</span>
 	<span>${E ? "🚪" : "⬛️"}</span>
 </div>
 <div>
