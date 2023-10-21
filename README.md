@@ -14,7 +14,9 @@ Simple generator dungeon in typescript.
 
 ```bash
 git clone git@github.com:AllanCerveaux/Dungen.git
-[npm|pnpm|yarn] install
+# pm = [npm|pnpm|yarn]
+pm install
+pm run dev
 ```
 
 ## Contributing
