@@ -1,0 +1,13 @@
+.row {
+	display: flex;
+	margin: 1rem;
+}
+
+.room > div {
+	display: flex;
+	justify-content: space-between;
+}
+
+.room.start {
+	background-color: green;
+}

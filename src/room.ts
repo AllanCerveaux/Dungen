@@ -64,11 +64,11 @@ export class Room {
 		}
 	}
 
-	link(direction: DoorDirectionName) {
+	link(direction: DoorDirectionName): void {
 		this.activateDoor(this.getReverseDirection(direction))
 	}
 
-	activateDoor(direction: DoorDirectionName) {
+	activateDoor(direction: DoorDirectionName): void {
 		this._doors = {
 			...this._doors,
 			[direction]: {
@@ -86,7 +86,7 @@ export class Room {
 		}))
 	}
 
-	getDoor(x: number, y: number) {
+	getDoor(x: number, y: number): [DoorDirectionName, DoorDirectionValue] | undefined {
 		return this.doors_entries.find(([_, { position }]) => position.x === x && position.y === y)
 	}
 
@@ -98,7 +98,7 @@ export class Room {
 		else return direction
 	}
 
-	disableDoor() {
+	disableDoor(): void {
 		this.doors_entries.forEach(([direction, { position }]) => {
 			if (!this.doorCanBePlaced(position)) {
 				this.doors[direction].can_place = false
@@ -141,7 +141,13 @@ export class Room {
 		return Object.entries(this._doors) as Array<[DoorDirectionName, DoorDirectionValue]>
 	}
 
-	draw() {
+	draw(): string {
+		const {
+			NORTH: { active: N },
+			SOUTH: { active: S },
+			EAST: { active: E },
+			WEST: { active: W }
+		} = this.doors
 
 		const DN = N ? "N" : ""
 		const DS = S ? "S" : ""
@@ -151,32 +157,36 @@ export class Room {
 		return `[${this.x}-${this.y}${CR}(${DW}${DN}${DS}${DE})]`
 	}
 
-	html() {
+	html(): HTMLDivElement {
 		const {
 			NORTH: { active: N },
 			SOUTH: { active: S },
 			EAST: { active: E },
 			WEST: { active: W }
 		} = this.doors
-		return `
+		const room = document.createElement('div')
+		const classes = [
+			'room'
+		]
+		if (this.type === 'Depart') classes.push('start')
+		room.classList.add(...classes)
+		room.innerHTML = `
 <div>
-		<div>
-			<span>◤</span>
-			<span>${N ? "🚪" : "⬛️"}</span>
-			<span>◥</span>
-		</div>
-		<div>
-			<span>${W ? "🚪" : "⬛️"}</span>
-			<span>${this._type?.charAt(0)}<span>
-			<span>${E ? "🚪" : "⬛️"}</span>
-		</div>
-		<div>
-		<span>◣</span>
-		<span>${S ? "🚪" : "⬛️"}</span>
-		<span>◢</span>
-	</div>
+	<span>◤</span>
+	<span>${N ? "🚪" : "⬛️"}</span>
+	<span>◥</span>
 </div>
-		
+<div>
+	<span>${W ? "🚪" : "⬛️"}</span>
+	<span>[${this.y}-${this.x}]<span>
+	<span>${E ? "🚪" : "⬛️"}</span>
+</div>
+<div>
+	<span>◣</span>
+	<span>${S ? "🚪" : "⬛️"}</span>
+	<span>◢</span>
+</div>
 		`
+		return room
 	}
 }
