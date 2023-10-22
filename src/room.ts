@@ -126,6 +126,9 @@ export class Room {
 			this.y + position.y < DUNGEON_MAX_SIZE.height;
 	}
 
+	set type(payload: RoomType) {
+		this._type = payload
+	}
 	get type(): RoomType | null {
 		return this._type
 	}

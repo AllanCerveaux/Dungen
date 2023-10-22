@@ -17,7 +17,8 @@ export class Dungeon {
 	generate() {
 		this.generateDungeon();
 		this.generateRooms();
-		this.validateAllDoors()
+		this.validateAllDoors();
+		this.generateEndRoom();
 	}
 
 	generateDungeon() {
@@ -67,6 +68,21 @@ export class Dungeon {
 		}
 	}
 
+	generateEndRoom(): void {
+		const potentialBossRooms = [];
+		for (const row of this.grid) {
+			for (const room of row) {
+				if (room && room.doors_active.length === 1 && room.type !== 'Depart') {
+					potentialBossRooms.push(room);
+				}
+			}
+		}
+		if (potentialBossRooms.length > 0) {
+			const chosenBossRoom = potentialBossRooms[getRandomInt(0, potentialBossRooms.length)];
+			chosenBossRoom.type = 'End'
+		}
+	}
+
 	validateRoomDoors(room: Room) {
 		for (const [direction, doorData] of room.doors_entries) {
 			if (!doorData.active) continue;
@@ -76,12 +92,12 @@ export class Dungeon {
 
 			const neighbor = this.getRoomByPosition(neighborPos.x, neighborPos.y);
 			if (!neighbor) {
-				doorData.active = false; // Disable the door if there's no neighboring room
+				doorData.active = false;
 			} else {
 				const oppositeDirection = room.getReverseDirection(direction);
 				const neighborDoor = neighbor.doors[oppositeDirection];
 				if (!neighborDoor.active) {
-					doorData.active = false; // Disable the door if the neighboring room's door is inactive
+					doorData.active = false;
 				}
 			}
 		}
@@ -109,15 +125,22 @@ export class Dungeon {
 	}
 
 	getGenerationProbability(x: number, y: number): number {
-		const centerX = this._size.width / 2;
-		const centerY = this._size.height / 2;
+		const startRoom = this._preset_room["Depart"];
+		if (!startRoom) return 0; // Cela ne devrait pas se produire, mais c'est juste pour être sûr.
 
-		const distanceToCenter = Math.sqrt((x - centerX) ** 2 + (y - centerY) ** 2);
-		const maxDistance = Math.sqrt(centerX ** 2 + centerY ** 2);
+		// Calculer la distance par rapport à la salle de départ.
+		const distanceToStart = Math.sqrt((x - startRoom.x) ** 2 + (y - startRoom.y) ** 2);
+		console.log("distanceToStart", distanceToStart)
 
-		const proximityFactor = (maxDistance - distanceToCenter) / maxDistance;
+		// La distance maximale possible dans le donjon (diagonale)
+		const maxDistance = Math.sqrt(this._size.width ** 2 + this._size.height ** 2);
+		console.log("maxDistance", maxDistance)
 
-		return Math.min((proximityFactor * 100) + 50, 100);
+		// Plus la salle est proche de la salle de départ, plus la probabilité est élevée.
+		const proximityFactor = (maxDistance - distanceToStart) / maxDistance;
+		console.log(proximityFactor * 100)
+
+		return proximityFactor * 100;
 	}
 
 	drawHTML() {
