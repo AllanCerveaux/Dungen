@@ -1,0 +1,30 @@
+#app {
+	width: 50vw;
+}
+.row {
+	display: flex;
+	margin: 1rem;
+}
+.cell {
+	width: -webkit-fill-available;
+	position: relative;
+}
+.room > div {
+	display: flex;
+	justify-content: space-between;
+}
+.room > div:nth-of-type(1) {
+	opacity: 0.1;
+	justify-content: center;
+	position: absolute;
+	bottom: 37%;
+	left: 2%;
+	background-color: black;
+	color: white;
+	width: 100%;
+	text-align: center;
+}
+
+.room > div:nth-of-type(1):hover {
+	opacity: 1;
+}
