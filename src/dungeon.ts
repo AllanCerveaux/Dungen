@@ -55,7 +55,6 @@ export class Dungeon {
 					const neighborPos = room.getNeighborAtDirection(door.direction)
 					if (!neighborPos) continue
 					const neighbor = this.getRoomByPosition(neighborPos.x, neighborPos.y)
-					console.log(neighbor)
 					if (!neighbor) {
 						door.desactivate()
 					} else {
