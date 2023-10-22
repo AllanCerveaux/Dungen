@@ -1,96 +1,77 @@
-import { DoorDirection, DoorDirectionName, DoorDirectionValue, RoomNeighborPos, RoomType, Vector2 } from "./type";
+import { Vector2 } from "./Vector2";
+import { Door } from "./door";
+import { DoorDirectionName, RoomNeighborPos, RoomType } from "./type";
 import { DUNGEON_MAX_SIZE, getRandomInt } from "./utils";
 
+
 export class Room {
-	private _position: Vector2 = {
-		x: 0,
-		y: 0,
-	};
-	private _type: RoomType | null = null;
-	private _doors: DoorDirection = {
-		NORTH: {
-			position: {
-				x: 0,
-				y: -1,
-			},
-			active: false,
-			can_place: true
-		},
-		SOUTH: {
-			position: {
-				x: 0,
-				y: 1,
-			},
-			active: false,
-			can_place: true
-		},
-		EAST: {
-			position: {
-				x: 1,
-				y: 0,
-			},
-			active: false,
-			can_place: true
-		},
-		WEST: {
-			position: {
-				x: -1,
-				y: 0,
-			},
-			active: false,
-			can_place: true
-		},
-	};
+	private _doors: Door[] = [];
 
-	constructor(position: Vector2, type: RoomType) {
-		this._position = position;
-		this._type = type;
-	}
+	constructor(
+		public position: Vector2,
+		public type: RoomType
+	) { }
 
-	generateDoor(): void {
-		this.disableDoor()
+	generateDoor() {
 		const desiredDoorCount = getRandomInt(1, 5);
-		const potentialDirections = [...this.doors_inactive];
+		const potentialDirections: DoorDirectionName[] = ["NORTH", "EAST", "WEST", "SOUTH"];
+		let generatedDoors = 0;
 
-		for (let i = 0; i < desiredDoorCount && potentialDirections.length > 0; i++) {
+		while (generatedDoors < desiredDoorCount && potentialDirections.length > 0) {
 			const randomIndex = getRandomInt(0, potentialDirections.length);
-			const [direction] = potentialDirections[randomIndex];
+			const direction = potentialDirections[randomIndex];
+			const door = new Door(direction);
 
-			if (this._doors[direction].can_place) {
-				this.activateDoor(direction);
+			if (!this.doorCanBePlaced(door.position) || this.getDoorByDirection(direction)) {
+				potentialDirections.splice(randomIndex, 1);
+				continue;
 			}
 
+			door.activate();
+			this._doors.push(door);
 			potentialDirections.splice(randomIndex, 1);
+			generatedDoors++;
 		}
 	}
 
-	link(direction: DoorDirectionName): void {
-		this.activateDoor(this.getReverseDirection(direction))
+	getDoorByDirection(payload: DoorDirectionName): Door | undefined {
+		return this._doors.find(({ direction }) => direction === payload)
 	}
 
-	activateDoor(direction: DoorDirectionName): void {
-		this._doors = {
-			...this._doors,
-			[direction]: {
-				...this._doors[direction],
-				active: true,
-			},
-		};
+	getNeighborAtDirection(direction: DoorDirectionName): Vector2 | null {
+		const door = this.getDoorByDirection(direction)
+		if (!door) return null
+		const x = this.x + door.x;
+		const y = this.y + door.y;
+
+		return new Vector2(x, y)
 	}
 
 	getNeighborPos(): RoomNeighborPos[] {
-		return this.doors_active.map(([direction, { position }]) => ({
-			direction: direction,
+		return this._doors.map(({ direction, position }) => ({
+			direction: this.getOppositeDirection(direction),
 			x: this.x + position.x,
 			y: this.y + position.y
 		}))
 	}
 
-	getDoor(x: number, y: number): [DoorDirectionName, DoorDirectionValue] | undefined {
-		return this.doors_entries.find(([_, { position }]) => position.x === x && position.y === y)
+	linkDoor(direction: DoorDirectionName): void {
+		const door = this.getDoorByDirection(direction)
+		if (!door) {
+			const linkedDoor = new Door(direction)
+			linkedDoor.activate()
+			this._doors.push(linkedDoor)
+		}
 	}
 
-	getReverseDirection(direction: DoorDirectionName): DoorDirectionName {
+	unlinkDoor(direction: DoorDirectionName): void {
+		const door = this.getDoorByDirection(direction)
+		if (door) {
+			door.desactivate()
+		}
+	}
+
+	getOppositeDirection(direction: DoorDirectionName): DoorDirectionName {
 		if (direction === "NORTH") return "SOUTH"
 		else if (direction === "SOUTH") return "NORTH"
 		else if (direction === "EAST") return "WEST"
@@ -98,119 +79,63 @@ export class Room {
 		else return direction
 	}
 
-	getNeighborAtDirection(direction: DoorDirectionName): Vector2 | null {
-		const doorData = this._doors[direction];
-		if (!doorData) return null;
-
-		const x = this.x + doorData.position.x;
-		const y = this.y + doorData.position.y;
-
-		return {
-			x,
-			y
-		};
-	}
-
-	disableDoor(): void {
-		this.doors_entries.forEach(([direction, { position }]) => {
-			if (!this.doorCanBePlaced(position)) {
-				this.doors[direction].can_place = false
-			}
-		})
-	}
-
-	doorCanBePlaced(position: Vector2): boolean {
+	private doorCanBePlaced(position: Vector2): boolean {
 		return this.x + position.x >= 0 &&
 			this.x + position.x < DUNGEON_MAX_SIZE.width &&
 			this.y + position.y >= 0 &&
 			this.y + position.y < DUNGEON_MAX_SIZE.height;
 	}
 
-	set type(payload: RoomType) {
-		this._type = payload
-	}
-	get type(): RoomType | null {
-		return this._type
+	get doors(): Door[] {
+		return this._doors
 	}
 
-	get doors(): DoorDirection {
-		return this._doors;
-	}
-
-	get doors_active() {
-		return this.doors_entries.filter(([_, { active }]) => active);
-	}
-
-	get doors_inactive() {
-		return this.doors_entries.filter(([_, { active, can_place }]) => !active && can_place);
+	get doorCount(): number {
+		return this._doors.length
 	}
 
 	get x(): number {
-		return this._position.x;
+		return this.position.x
 	}
-
 	get y(): number {
-		return this._position.y;
-	}
-
-	get doors_entries(): Array<[DoorDirectionName, DoorDirectionValue]> {
-		return Object.entries(this._doors) as Array<[DoorDirectionName, DoorDirectionValue]>
-	}
-
-	draw(): string {
-		const {
-			NORTH: { active: N },
-			SOUTH: { active: S },
-			EAST: { active: E },
-			WEST: { active: W }
-		} = this.doors
-
-		const DN = N ? "N" : ""
-		const DS = S ? "S" : ""
-		const DE = E ? "E" : ""
-		const DW = W ? "W" : ""
-		const CR = this._type?.charAt(0)
-		return `[${this.x}-${this.y}${CR}(${DW}${DN}${DS}${DE})]`
+		return this.position.y
 	}
 
 	html(): HTMLDivElement {
-		const {
-			NORTH: { active: N },
-			SOUTH: { active: S },
-			EAST: { active: E },
-			WEST: { active: W }
-		} = this.doors
-		const roomType = () => {
-			if (this.type === 'Depart') return '🟩'
-			else if (this.type === 'End') return '🟥'
-			else return '⬜️'
-		}
-		const room = document.createElement('div')
+		const roomContainer = document.createElement('div')
 		const classes = [
 			'room'
 		]
-		if (this.type === 'Depart') classes.push('start')
-		room.classList.add(...classes)
-		room.innerHTML = `
-<div>
-	<span>[${this.y}-${this.x}]<span>
-</div>
-<div>
-	<span>◤</span>
-	<span>${N ? "🚪" : "⬛️"}</span>
-	<span>◥</span>
-</div>
-<div>
-	<span>${W ? "🚪" : "⬛️"}</span>
-	<span>${roomType()}</span>
-	<span>${E ? "🚪" : "⬛️"}</span>
-</div>
-<div>
-	<span>◣</span>
-	<span>${S ? "🚪" : "⬛️"}</span>
-	<span>◢</span>
-</div>
-		`
-		return room
+		if (this.type === 'start') classes.push('start')
+		roomContainer.classList.add(...classes)
+
+		const roomType = () => {
+			if (this.type === 'start') return '🟩'
+			else if (this.type === 'end') return '🟥'
+			else return '⬜️'
+		}
+
+		roomContainer.innerHTML = `
+		<div>
+			<span>[${this.y}-${this.x}]<span>
+		</div>
+		<div>
+			<span>◤</span>
+			<span>${this.getDoorByDirection('NORTH')?.isActive ? "🚪" : "⬛️"}</span>
+			<span>◥</span>
+		</div>
+		<div>
+			<span>${this.getDoorByDirection('WEST')?.isActive ? "🚪" : "⬛️"}</span>
+			<span>${roomType()}</span>
+			<span>${this.getDoorByDirection('EAST')?.isActive ? "🚪" : "⬛️"}</span>
+		</div>
+		<div>
+			<span>◣</span>
+			<span>${this.getDoorByDirection('SOUTH')?.isActive ? "🚪" : "⬛️"}</span>
+			<span>◢</span>
+		</div>
+				`
+
+		return roomContainer
 	}
 }
